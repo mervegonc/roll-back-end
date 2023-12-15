@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -40,20 +39,13 @@ public class AuthController {
 	}
 
 	@PostMapping("/login")
-	public ResponseEntity<String> login(@RequestBody UserRequest loginRequest) {
-	    try {
+	public String login(@RequestBody UserRequest loginRequest) {
 	        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(loginRequest.getUserName(), loginRequest.getPassword());
-	        Authentication auth  = authenticationManager.authenticate(authToken);
+	        Authentication auth = authenticationManager.authenticate(authToken);
 	        SecurityContextHolder.getContext().setAuthentication(auth);
 	        String jwtToken = jwtTokenProvider.generateJwtToken(auth);
-	        return ResponseEntity.ok("Bearer " + jwtToken);
-	    } catch (AuthenticationException e) {
-	        e.printStackTrace();
-	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed: " + e.getMessage());
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred: " + e.getMessage());
-	    }
+	        return  "Bearer "+jwtToken;
+	  
 	}
 
 	
