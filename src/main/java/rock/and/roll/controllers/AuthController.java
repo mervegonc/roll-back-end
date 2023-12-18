@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import rock.and.roll.entities.User;
 import rock.and.roll.requests.UserRequest;
+import rock.and.roll.responses.AuthResponse;
 import rock.and.roll.securities.JwtTokenProvider;
 import rock.and.roll.services.UserService;
 
@@ -39,26 +40,33 @@ public class AuthController {
 	}
 
 	@PostMapping("/login")
-	public String login(@RequestBody UserRequest loginRequest) {
+	public AuthResponse login(@RequestBody UserRequest loginRequest) {
 	        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(loginRequest.getUserName(), loginRequest.getPassword());
 	        Authentication auth = authenticationManager.authenticate(authToken);
 	        SecurityContextHolder.getContext().setAuthentication(auth);
 	        String jwtToken = jwtTokenProvider.generateJwtToken(auth);
-	        return  "Bearer "+jwtToken;
+	        User user = userService.getOneUserByUserName(loginRequest.getUserName());
+	        AuthResponse authResponse = new AuthResponse();
+	        authResponse.setMessage( "Bearer "+jwtToken);
+	        authResponse.setUserId(user.getId());
+	        return authResponse;
 	  
 	}
 
 	
 	@PostMapping("/register")
-	public ResponseEntity<String> register(@RequestBody UserRequest  registerRequest){
-		if(userService.getOneUserByUserName(registerRequest.getUserName()) !=null)
-		return new ResponseEntity<>("Username already in use", HttpStatus.BAD_REQUEST);
-		
+	public ResponseEntity<AuthResponse> register(@RequestBody UserRequest  registerRequest){
+		AuthResponse authResponse = new AuthResponse();
+		if(userService.getOneUserByUserName(registerRequest.getUserName()) !=null) {
+			authResponse.setMessage("Username already in use");
+		return new ResponseEntity<>(authResponse, HttpStatus.BAD_REQUEST);
+	}
 		User user = new User();
 		user.setUserName((registerRequest.getUserName()));
 		user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
 		userService.saveOneUser(user);
-		return new ResponseEntity<> ("User successfully registered", HttpStatus.CREATED);
-	}
+		authResponse.setMessage("User successfully registered");
+		return new ResponseEntity<> (authResponse, HttpStatus.CREATED);
 	
+	}
 }

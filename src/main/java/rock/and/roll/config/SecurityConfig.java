@@ -46,6 +46,7 @@ private UserDetailsServiceImpl userDetailsService;
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
     
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
@@ -57,7 +58,7 @@ private UserDetailsServiceImpl userDetailsService;
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("*");
+        config.addAllowedOriginPattern("*"); // veya belirli origin pattern'lerini ekleyin
         config.addAllowedHeader("*");
         config.addAllowedMethod("OPTIONS");
         config.addAllowedMethod("HEAD");
@@ -69,23 +70,33 @@ private UserDetailsServiceImpl userDetailsService;
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
     }
+
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
-    	httpSecurity
-    		.cors()
-    		.and()
-    		.csrf().disable()
-    		.exceptionHandling().authenticationEntryPoint(handler).and()
-    		.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
-    		.authorizeRequests()
-    		.requestMatchers(HttpMethod.GET, "/posts").hasAnyRole("USER", "ADMIN")
-    		.requestMatchers(HttpMethod.GET, "/comments").hasAnyRole("USER", "ADMIN")
-    		.requestMatchers("/auth/**").permitAll()
-    		.anyRequest().authenticated();
+        httpSecurity
+        .cors()
+		.and()
+		.csrf().disable()
+		.exceptionHandling().authenticationEntryPoint(handler).and()
+		.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
+		.authorizeRequests()
+		.requestMatchers(HttpMethod.GET, "/posts")
+		.authenticated().and()
+		.authorizeRequests()
+		.requestMatchers(HttpMethod.POST, "/auth/Login").authenticated()
+		//.requestMatchers(HttpMethod.POST, "/posts")
+		//.permitAll()
+		.requestMatchers(HttpMethod.GET, "/comments")
+		.permitAll()
+		.requestMatchers("/auth/**")
+		.permitAll()
+		
 
-    		
-    	httpSecurity.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+		.anyRequest().authenticated();
+        
+        httpSecurity.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
     	return httpSecurity.build();
     }
+
 }
